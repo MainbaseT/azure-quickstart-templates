@@ -75,13 +75,6 @@
       "type": "string",
       "defaultValue": "[subscription().tenantId]"
     },
-    "apiVersion": {
-      "defaultValue": "2024-04-01",
-      "type": "string",
-      "metadata": {
-        "description": "The api version for deploying a hci cluster"
-      }
-    },
     "witnessType": {
       "defaultValue": "No Witness",
       "type": "string",
@@ -633,6 +626,22 @@
       }
     },
     {
+      "copy": {
+        "name": "roleAssignmentCopy",
+        "count": "[length(parameters('arcNodeResourceIds'))]"
+      },
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(concat('INFRAVM-RoleAssign', parameters('arcNodeResourceIds')[copyIndex()]))]",
+      "properties": {
+        "mode": "Incremental",
+        "roleDefinitionId": "[concat(subscription().id, '/providers/Microsoft.Authorization/roleDefinitions/', 'c99c945f8bd14fb1a90301460aae6068')]",
+        "principalId": "[reference(parameters('arcNodeResourceIds')[copyIndex()], '2023-10-03-preview', 'full').identity.principalId]",
+        "scope": "[resourceGroup().id]",
+        "description": "[concat(substring(parameters('arcNodeResourceIds')[copyIndex()],lastIndexOf(parameters('arcNodeResourceIds')[copyIndex()],'/')),'- Azure Stack HCI Connected InfraVMs')]"
+      }
+    },
+    {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-01-01",
       "name": "[parameters('diagnosticStorageAccountName')]",
@@ -705,7 +714,7 @@
     {
       "condition": "[equals(parameters('deploymentMode'), 'Validate')]",
       "type": "Microsoft.AzureStackHCI/clusters",
-      "apiVersion": "[parameters('apiVersion')]",
+      "apiVersion": "2024-09-01-preview",
       "name": "[parameters('clusterName')]",
       "dependsOn": [
         "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
@@ -807,7 +816,7 @@
     },
     {
       "type": "microsoft.azurestackhci/clusters/deploymentSettings",
-      "apiVersion": "[parameters('apiVersion')]",
+      "apiVersion": "2024-09-01-preview",
       "name": "[format('{0}/default', parameters('clusterName'))]",
       "dependsOn": [
         "[resourceId('Microsoft.AzureStackHCI/clusters', parameters('clusterName'))]"
